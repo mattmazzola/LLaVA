@@ -28,6 +28,11 @@ priority = {
     "koala-13b": "aaaaaab",
 }
 
+args = None
+
+def set_args(args_):
+    global args
+    args = args_
 
 def get_conv_log_filename():
     t = datetime.datetime.now()
@@ -35,7 +40,7 @@ def get_conv_log_filename():
     return name
 
 
-def get_model_list():
+def get_model_list(args):
     ret = requests.post(args.controller_url + "/refresh_all_workers")
     assert ret.status_code == 200
     ret = requests.post(args.controller_url + "/list_models")
@@ -77,7 +82,7 @@ def load_demo(url_params, request: gr.Request):
 
 def load_demo_refresh_model_list(request: gr.Request):
     logger.info(f"load_demo. ip: {request.client.host}")
-    models = get_model_list()
+    models = get_model_list(args)
     state = default_conversation.copy()
     return (state, gr.Dropdown.update(
                choices=models,
@@ -307,7 +312,11 @@ The service is a research preview intended for non-commercial use only, subject 
 """)
 
 
+# Import the inspect module
+import inspect
+
 def build_demo(embed_mode):
+
     textbox = gr.Textbox(show_label=False, placeholder="Enter text and press ENTER", visible=False, container=False)
     with gr.Blocks(title="LLaVA", theme=gr.themes.Base()) as demo:
         state = gr.State()
@@ -361,6 +370,9 @@ def build_demo(embed_mode):
             gr.Markdown(tos_markdown)
             gr.Markdown(learn_more_markdown)
         url_params = gr.JSON(visible=False)
+        cf = inspect.currentframe ()
+        fi = inspect.getframeinfo (cf)
+        print (f"Current file: {fi.filename}:{fi.lineno}: {url_params}")
 
         # Register listeners
         btn_list = [upvote_btn, downvote_btn, flag_btn, regenerate_btn, clear_btn]
@@ -384,6 +396,9 @@ def build_demo(embed_mode):
                    [state, chatbot] + btn_list)
 
         if args.model_list_mode == "once":
+            cf = inspect.currentframe ()
+            fi = inspect.getframeinfo (cf)
+            print (f"Current file: {fi.filename}:{fi.lineno}: {url_params}")
             demo.load(load_demo, [url_params], [state, model_selector,
                 chatbot, textbox, submit_btn, button_row, parameter_row],
                 _js=get_window_url_params)
@@ -400,7 +415,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--host", type=str, default="0.0.0.0")
     parser.add_argument("--port", type=int)
-    parser.add_argument("--controller-url", type=str, default="http://localhost:21001")
+    parser.add_argument("--controller-url", type=str, default="http://localhost:10000")
     parser.add_argument("--concurrency-count", type=int, default=8)
     parser.add_argument("--model-list-mode", type=str, default="once",
         choices=["once", "reload"])
@@ -410,7 +425,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     logger.info(f"args: {args}")
 
-    models = get_model_list()
+    models = get_model_list(args) #so that the function doesn't use global variable
 
     logger.info(args)
     demo = build_demo(args.embed)
