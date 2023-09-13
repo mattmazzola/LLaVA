@@ -158,6 +158,11 @@ def add_text(state, text, image, image_process_mode, request: gr.Request):
         if '<image>' not in text:
             # text = '<Image><image></Image>' + text
             text = text + '\n<image>'
+        if (isinstance(image, dict)):
+            try:
+                image = image['image']
+            except KeyError:
+                print('Invalide image type. ImageMask expected.')
         text = (text, image, image_process_mode)
         if len(state.get_images(return_pil=True)) > 0:
             state = default_conversation.copy()
