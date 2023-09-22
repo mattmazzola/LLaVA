@@ -178,7 +178,7 @@ class Conversation:
                     image.save(buffered, format="JPEG")
                     img_b64_str = base64.b64encode(buffered.getvalue()).decode()
                     img_str = f'<img src="data:image/png;base64,{img_b64_str}" alt="user upload image" />'
-                    ret.append([img_str, None])
+#                    ret.append([img_str, None])
                     msg = msg.replace('<image>', '').strip()
                     if len(msg) > 0:
                         ret.append([msg, None])
