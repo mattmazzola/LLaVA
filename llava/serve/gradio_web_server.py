@@ -1,3 +1,8 @@
+import debugpy
+debugpy.listen(("localhost", 5678))
+print('listening to port 5678, attach the debugger to continue')
+debugpy.wait_for_client()
+
 import argparse
 import datetime
 import json
@@ -13,7 +18,6 @@ from llava.constants import LOGDIR
 from llava.utils import (build_logger, server_error_msg,
     violates_moderation, moderation_msg)
 import hashlib
-
 
 logger = build_logger("gradio_web_server", "gradio_web_server.log")
 
