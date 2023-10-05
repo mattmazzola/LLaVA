@@ -1,7 +1,7 @@
-import debugpy
-debugpy.listen(("localhost", 5678))
-print('listening to port 5678, attach the debugger to continue')
-debugpy.wait_for_client()
+#import debugpy
+#debugpy.listen(("localhost", 5678))
+#print('listening to port 5678, attach the debugger to continue')
+#debugpy.wait_for_client()
 
 import argparse
 import datetime
