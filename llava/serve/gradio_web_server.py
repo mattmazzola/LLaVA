@@ -374,9 +374,6 @@ def build_demo(embed_mode):
             gr.Markdown(tos_markdown)
             gr.Markdown(learn_more_markdown)
         url_params = gr.JSON(visible=False)
-        cf = inspect.currentframe ()
-        fi = inspect.getframeinfo (cf)
-        print (f"Current file: {fi.filename}:{fi.lineno}: {url_params}")
 
         # Register listeners
         btn_list = [upvote_btn, downvote_btn, flag_btn, regenerate_btn, clear_btn]
