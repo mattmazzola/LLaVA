@@ -36,4 +36,8 @@ pip install -e .
 pip install -e ".[train]"
 pip install flash-attn --no-build-isolation
 
+# Download checkpoints
+git clone https://huggingface.co/liuhaotian/llava-v1.5-7b
+git clone https://huggingface.co/liuhaotian/llava-v1.5-13b
+
 echo "postCreateCommand.sh COMPLETE!"
