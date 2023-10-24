@@ -29,7 +29,6 @@ RUN cd /tmp && \
     tar xvf azcopy_linux_amd64_10.17.0.tar.gz && \
     mkdir -p ~/.local/bin && \
     mv azcopy_linux_amd64_10.17.0/azcopy ~/.local/bin && \
-    echo "export AZCOPY_CONCURRENCY_VALUE=AUTO" >> ~/.zshrc && \
     chmod +x ~/.local/bin/azcopy && \
     rm -rf azcopy_linux_amd64*
 
@@ -37,15 +36,7 @@ RUN cd /tmp && \
 RUN cd /tmp && \
     wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh && \
     bash ./Miniconda3-latest-Linux-x86_64.sh -b && \
-    rm ./Miniconda3-latest-Linux-x86_64.sh && \
-    source /home/vscode/miniconda3/bin/activate && \
-    conda create -y -q -n llava python=3.10 && \
-    conda activate llava && \
-    echo ". /home/vscode/miniconda3/bin/activate" >> ~/.zshrc && \
-    echo ". /home/vscode/miniconda3/bin/activate" >> ~/.bashrc && \
-    echo "conda activate llava" >> ~/.zshrc && \
-    echo "conda activate llava" >> ~/.bashrc && \
-    pip install pre-commit==3.0.2
+    rm ./Miniconda3-latest-Linux-x86_64.sh
 
 # Install dotnet
 RUN cd /tmp && \
@@ -53,6 +44,4 @@ RUN cd /tmp && \
     chmod +x dotnet-install.sh && \
     ./dotnet-install.sh --channel 7.0 && \
     ./dotnet-install.sh --channel 3.1 && \
-    rm ./dotnet-install.sh && \
-    echo 'export PATH="$PATH:$HOME/.dotnet"' >> ~/.bashrc && \
-    echo 'export PATH="$PATH:$HOME/.dotnet"' >> ~/.zshrc
+    rm ./dotnet-install.sh
