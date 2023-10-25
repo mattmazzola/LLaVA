@@ -33,3 +33,6 @@ ckpts*
 
 # DevContainer
 !.devcontainer/*
+
+# Demo
+serve_images/
