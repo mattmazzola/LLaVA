@@ -7,7 +7,7 @@ RUN apt update && \
     apt install -yq \
         ffmpeg \
         dkms \
-        build-essential 
+        build-essential
 
 # add user tools
 RUN sudo apt install -yq \
@@ -15,6 +15,11 @@ RUN sudo apt install -yq \
         jp \
         tree \
         tldr
+
+# add git-lfs and install
+RUN curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | sudo bash && \
+    sudo apt-get install -yq git-lfs && \
+    git lfs install
 
 ############################################
 # Setup user
