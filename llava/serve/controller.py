@@ -247,9 +247,9 @@ async def register_worker(request: Request):
         data.get("worker_status", None))
 
 
-@app.post("/refresh_all_workers")
+@app.post("/refresh_all_workers", status_code=204)
 async def refresh_all_workers():
-    models = controller.refresh_all_workers()
+    controller.refresh_all_workers()
 
 
 @app.post("/list_models")
