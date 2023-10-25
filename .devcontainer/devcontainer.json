@@ -22,7 +22,7 @@
             "settings": {
                 "python.analysis.autoImportCompletions": true,
                 "python.analysis.autoImportUserSymbols": true,
-                "python.defaultInterpreterPath": "~/miniconda3/envs/pmcexp/bin/python",
+                "python.defaultInterpreterPath": "~/miniconda3/envs/llava/bin/python",
                 "python.formatting.provider": "yapf",
                 "python.linting.enabled": true,
                 "python.linting.flake8Enabled": true,
