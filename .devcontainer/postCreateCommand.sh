@@ -36,10 +36,10 @@ pip install -e .
 pip install -e ".[train]"
 pip install flash-attn --no-build-isolation
 
-# Download checkpoints
-git clone https://huggingface.co/liuhaotian/llava-v1.5-7b
+# Download checkpoints to location outside of the repo
+git clone https://huggingface.co/liuhaotian/llava-v1.5-7b ~/llava-v1.5-7b
 
 # Commented because it is unlikely for users to have enough local GPU memory to load the model
-# git clone https://huggingface.co/liuhaotian/llava-v1.5-13b
+# git clone https://huggingface.co/liuhaotian/llava-v1.5-13b ~/llava-v1.5-13b
 
 echo "postCreateCommand.sh COMPLETE!"
