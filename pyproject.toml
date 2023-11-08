@@ -38,3 +38,6 @@ exclude = ["assets*", "benchmark*", "docs", "dist*", "playground*", "scripts*", 
 
 [tool.wheel]
 exclude = ["assets*", "benchmark*", "docs", "dist*", "playground*", "scripts*", "tests*"]
+
+[tool.black]
+line-length = 120
