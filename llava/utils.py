@@ -114,13 +114,15 @@ def violates_openai_moderation(text):
     Check whether the text violates OpenAI moderation API.
     """
     url = "https://api.openai.com/v1/moderations"
-    headers = {"Content-Type": "application/json",
-               "Authorization": "Bearer " + os.environ["OPENAI_API_KEY"]}
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {os.environ['OPENAI_API_KEY']}',
+    }
     text = text.replace("\n", "")
-    data = "{" + '"input": ' + f'"{text}"' + "}"
-    data = data.encode("utf-8")
+    data = {"input": text}
+
     try:
-        ret = requests.post(url, headers=headers, data=data, timeout=5)
+        ret = requests.post(url, headers=headers, data=json.dumps(data).encode("utf-8"), timeout=5)
         flagged = ret.json()["results"][0]["flagged"]
     except requests.exceptions.RequestException as e:
         flagged = False
