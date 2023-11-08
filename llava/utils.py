@@ -1,4 +1,5 @@
 import datetime
+import json
 import logging
 import logging.handlers
 import os
@@ -11,6 +12,7 @@ from azure.ai.contentsafety.models import AnalyzeTextOptions, AnalyzeTextResult,
 from matplotlib import category
 
 import requests
+from .guardlistWrapper import GuardlistWrapper
 
 from llava.constants import LOGDIR
 
@@ -106,7 +108,17 @@ def disable_torch_init():
 
 
 def violates_moderation(text):
-    return violates_openai_moderation(text) or violates_azure_content_safety(text)
+    return violates_guardlist_moderation(text) or violates_azure_content_safety(text)  # or violates_openai_moderation(text)
+
+
+GuardlistWrapper.appKey = os.environ["GUARDLIST_KEY"]
+GuardlistWrapper.partnerName = "LLaVA-Interactive-Demo"
+
+
+def violates_guardlist_moderation(text):
+    is_phrase_problematic = GuardlistWrapper.is_phrase_problematic(text, "en")
+
+    return is_phrase_problematic
 
 
 def violates_openai_moderation(text):
@@ -116,7 +128,7 @@ def violates_openai_moderation(text):
     url = "https://api.openai.com/v1/moderations"
     headers = {
         "Content-Type": "application/json",
-        "Authorization": f"Bearer {os.environ['OPENAI_API_KEY']}',
+        "Authorization": f"Bearer {os.environ['OPENAI_API_KEY']}",
     }
     text = text.replace("\n", "")
     data = {"input": text}
@@ -133,6 +145,7 @@ def violates_openai_moderation(text):
 
 
 client: ContentSafetyClient = None
+
 
 def violates_azure_content_safety(text,
                                   hate_severity_max=3,
