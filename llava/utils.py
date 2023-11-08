@@ -4,6 +4,12 @@ import logging.handlers
 import os
 import sys
 
+from azure.ai.contentsafety import ContentSafetyClient
+from azure.core.credentials import AzureKeyCredential
+from azure.core.exceptions import HttpResponseError
+from azure.ai.contentsafety.models import AnalyzeTextOptions, AnalyzeTextResult, AnalyzeImageOptions, AnalyzeImageResult, ImageData
+from matplotlib import category
+
 import requests
 
 from llava.constants import LOGDIR
@@ -100,6 +106,10 @@ def disable_torch_init():
 
 
 def violates_moderation(text):
+    return violates_openai_moderation(text) or violates_azure_content_safety(text)
+
+
+def violates_openai_moderation(text):
     """
     Check whether the text violates OpenAI moderation API.
     """
@@ -118,6 +128,48 @@ def violates_moderation(text):
         flagged = False
 
     return flagged
+
+
+client: ContentSafetyClient = None
+
+def violates_azure_content_safety(text,
+                                  hate_severity_max=3,
+                                  self_harm_severity_max=3,
+                                  sexual_severity_max=3,
+                                  violence_severity_max=3):
+    does_text_violoate_policy = False
+
+    global client
+    if client is None:
+        endpoint = os.environ["CONTENT_SAFETY_ENDPOINT"]
+        key = os.environ["CONTENT_SAFETY_KEY"]
+        client = ContentSafetyClient(endpoint, AzureKeyCredential(key))
+
+    try:
+        request = AnalyzeTextOptions(text=text)
+        response = client.analyze_text(request)
+
+        category_results_vs_max_severity_pairs = [
+            (response.hate_result, hate_severity_max),
+            (response.self_harm_result, self_harm_severity_max),
+            (response.sexual_result, sexual_severity_max),
+            (response.violence_result, violence_severity_max),
+        ]
+
+        for category_result, max_severity in category_results_vs_max_severity_pairs:
+            if category_result is not None:
+                if category_result.severity > max_severity:
+                    does_text_violoate_policy = True
+                    print(f"'{text}' violated the {category_result.category} policy. Actual Severity: {category_result.severity} > Max Severity: {max_severity}")
+                    break
+
+    except HttpResponseError as e:
+        print("Analyze text failed.")
+        if e.error:
+            print(f"Error code: {e.error.code}")
+            print(f"Error message: {e.error.message}")
+
+    return does_text_violoate_policy
 
 
 def pretty_print_semaphore(semaphore):
