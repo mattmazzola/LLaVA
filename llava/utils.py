@@ -15,7 +15,8 @@ from .guardlistWrapper import GuardlistWrapper
 from llava.constants import LOGDIR
 
 server_error_msg = "**NETWORK ERROR DUE TO HIGH TRAFFIC. PLEASE REGENERATE OR REFRESH THIS PAGE.**"
-moderation_msg = "YOUR INPUT VIOLATES OUR CONTENT MODERATION GUIDELINES. PLEASE TRY AGAIN."
+moderation_input_msg = "YOUR INPUT VIOLATES OUR CONTENT MODERATION GUIDELINES. PLEASE TRY AGAIN."
+moderation_output_msg = "Sorry, the model output content which violates our content moderation policies."
 
 handler = None
 
@@ -30,7 +31,7 @@ def build_logger(logger_name, logger_filename):
 
     # Set the format of root handlers
     if not logging.getLogger().handlers:
-        logging.basicConfig(level=logging.INFO)
+        logging.basicConfig(level=os.environ.get("LOGLEVEL", logging.INFO))
     logging.getLogger().handlers[0].setFormatter(formatter)
 
     # Redirect stdout and stderr to loggers
@@ -94,6 +95,9 @@ class StreamToLogger(object):
         if self.linebuf != '':
             self.logger.log(self.log_level, self.linebuf.rstrip())
         self.linebuf = ''
+
+
+logger = build_logger("llava-utils", "llava-utils.log")
 
 
 def disable_torch_init():
@@ -168,19 +172,20 @@ def does_text_violate_azure_content_safety(text,
             (response.sexual_result, sexual_severity_max),
             (response.violence_result, violence_severity_max),
         ]
+        logger.debug(f"Text '{text}' content severity: {', '.join([f'{s.category}: {s.severity}' for s, _ in category_results_vs_max_severity_pairs])}")
 
         for category_result, max_severity in category_results_vs_max_severity_pairs:
             if category_result is not None:
                 if category_result.severity > max_severity:
                     does_violate = True
-                    print(f"⚠️ '{text}' violated the {category_result.category} policy. Actual Severity: {category_result.severity} > Max Severity: {max_severity}")
+                    logger.warning(f"⚠️ '{text}' violated the {category_result.category} policy. Actual Severity: {category_result.severity} > Max Severity: {max_severity}")
                     break
 
     except HttpResponseError as e:
-        print("Analyze text failed.")
+        logger.error("Analyze text failed.")
         if e.error:
-            print(f"Error code: {e.error.code}")
-            print(f"Error message: {e.error.message}")
+            logger.error(f"Error code: {e.error.code}")
+            logger.error(f"Error message: {e.error.message}")
 
     return does_violate
 
@@ -220,19 +225,20 @@ def does_image_violate_azure_content_safety(image,
             (response.sexual_result, sexual_severity_max),
             (response.violence_result, violence_severity_max),
         ]
+        logger.debug(f"Image content severity: {', '.join([f'{s.category}: {s.severity}' for s, _ in category_results_vs_max_severity_pairs])}")
 
         for category_result, max_severity in category_results_vs_max_severity_pairs:
             if category_result is not None:
                 if category_result.severity > max_severity:
                     does_violate = True
-                    print(f"⚠️ The image provided violated the {category_result.category} policy. Actual Severity: {category_result.severity} > Max Severity: {max_severity}")
+                    logger.warning(f"⚠️ The image provided violated the {category_result.category} policy. Actual Severity: {category_result.severity} > Max Severity: {max_severity}")
                     break
 
     except HttpResponseError as e:
-        print("Analyze image failed.")
+        logger.error("Analyze image failed.")
         if e.error:
-            print(f"Error code: {e.error.code}")
-            print(f"Error message: {e.error.message}")
+            logger.error(f"Error code: {e.error.code}")
+            logger.error(f"Error message: {e.error.message}")
 
     return does_violate
 
