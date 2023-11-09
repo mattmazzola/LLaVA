@@ -16,7 +16,7 @@ from llava.conversation import (default_conversation, conv_templates,
                                    SeparatorStyle)
 from llava.constants import LOGDIR
 from llava.utils import (build_logger, does_image_violate_azure_content_safety, server_error_msg,
-    violates_text_moderation, moderation_msg)
+    violates_text_moderation, moderation_input_msg, moderation_output_msg)
 import hashlib
 
 logger = build_logger("gradio_web_server", "gradio_web_server.log")
@@ -146,7 +146,7 @@ def add_text(state, text, image, image_process_mode, request: gr.Request):
             does_image_violate_policy = does_image_violate_azure_content_safety(image)
         if does_text_violate_policy or does_image_violate_policy:
             state.skip_next = True
-            return (state, state.to_gradio_chatbot(), moderation_msg, None) + (no_change_btn,) * 5
+            return (state, state.to_gradio_chatbot(), moderation_input_msg, None) + (no_change_btn,) * 5
 
     text = text[:1536]  # Hard cut-off
     if image is not None:
@@ -249,7 +249,8 @@ def http_bot(state, model_selector, temperature, top_p, max_new_tokens, request:
 
     pload['images'] = state.get_images()
 
-    state.messages[-1][-1] = "▌"
+    cursor_character = "▌"
+    state.messages[-1][-1] = cursor_character
     yield (state, state.to_gradio_chatbot()) + (disable_btn,) * 5
 
     try:
@@ -261,7 +262,16 @@ def http_bot(state, model_selector, temperature, top_p, max_new_tokens, request:
                 data = json.loads(chunk.decode())
                 if data["error_code"] == 0:
                     output = data["text"][len(prompt):].strip()
-                    state.messages[-1][-1] = output + "▌"
+
+                    if args.moderate:
+                        does_text_violate_policy = violates_text_moderation(output)
+                        if does_text_violate_policy:
+                            # Overwrite entire last message with moderation message and return to stop generation
+                            state.messages[-1][-1] = moderation_output_msg
+                            yield (state, state.to_gradio_chatbot()) + (disable_btn, disable_btn, disable_btn, enable_btn, enable_btn)
+                            return
+
+                    state.messages[-1][-1] = output + cursor_character
                     yield (state, state.to_gradio_chatbot()) + (disable_btn,) * 5
                 else:
                     output = data["text"] + f" (error_code: {data['error_code']})"
