@@ -15,8 +15,8 @@ import requests
 from llava.conversation import (default_conversation, conv_templates,
                                    SeparatorStyle)
 from llava.constants import LOGDIR
-from llava.utils import (build_logger, does_image_violate_azure_content_safety, server_error_msg,
-    violates_text_moderation, moderation_input_msg, moderation_output_msg)
+from llava.utils import (build_logger, does_image_violate_azure_content_safety, does_text_violate_azure_content_safety, server_error_msg, violates_guardlist_moderation, violates_openai_moderation,
+    moderation_input_msg, moderation_output_msg, ModerationOptions)
 import hashlib
 
 logger = build_logger("gradio_web_server", "gradio_web_server.log")
@@ -137,13 +137,25 @@ def clear_history(request: gr.Request):
 
 def add_text(state, text, image, image_process_mode, request: gr.Request):
     logger.info(f"add_text. ip: {request.client.host}. len: {len(text)}")
+
     if len(text) <= 0 and image is None:
         state.skip_next = True
         return (state, state.to_gradio_chatbot(), "", None) + (no_change_btn,) * 5
-    if args.moderate:
-        does_text_violate_policy = violates_text_moderation(text)
+
+    if len(args.moderate) > 0:
+        does_text_violate_policy = False
+        does_image_violate_policy = False
+
+        if ModerationOptions.ALL or ModerationOptions.INPUT_TEXT_GUARDLIST:
+            does_text_violate_policy = violates_guardlist_moderation(text)
+        if ModerationOptions.ALL or ModerationOptions.INPUT_TEXT_AICS:
+            does_text_violate_policy = does_text_violate_azure_content_safety(text)
+        if ModerationOptions.ALL or ModerationOptions.INPUT_TEXT_OPENAI:
+            does_text_violate_policy = violates_openai_moderation(text)
         if image is not None:
-            does_image_violate_policy = does_image_violate_azure_content_safety(image)
+            if ModerationOptions.ALL or ModerationOptions.INPUT_IMAGE_AICS:
+                does_image_violate_policy = does_image_violate_azure_content_safety(image)
+
         if does_text_violate_policy or does_image_violate_policy:
             state.skip_next = True
             return (state, state.to_gradio_chatbot(), moderation_input_msg, None) + (no_change_btn,) * 5
@@ -261,21 +273,29 @@ def http_bot(state, model_selector, temperature, top_p, max_new_tokens, request:
             if chunk:
                 data = json.loads(chunk.decode())
                 if data["error_code"] == 0:
-                    output = data["text"][len(prompt):].strip()
+                    model_output_text = data["text"][len(prompt):].strip()
 
-                    if args.moderate:
-                        does_text_violate_policy = violates_text_moderation(output)
+                    if len(args.moderate) > 0:
+                        does_text_violate_policy = False
+
+                        if ModerationOptions.ALL or ModerationOptions.INPUT_GUARDLIST:
+                            does_text_violate_policy = violates_guardlist_moderation(model_output_text)
+                        if ModerationOptions.ALL or ModerationOptions.INPUT_AICS_TEXT:
+                            does_text_violate_policy = does_text_violate_azure_content_safety(model_output_text)
+                        if ModerationOptions.ALL or ModerationOptions.INPUT_OPENAI:
+                            does_text_violate_policy = violates_openai_moderation(model_output_text)
+
                         if does_text_violate_policy:
                             # Overwrite entire last message with moderation message and return to stop generation
                             state.messages[-1][-1] = moderation_output_msg
                             yield (state, state.to_gradio_chatbot()) + (disable_btn, disable_btn, disable_btn, enable_btn, enable_btn)
                             return
 
-                    state.messages[-1][-1] = output + cursor_character
+                    state.messages[-1][-1] = model_output_text + cursor_character
                     yield (state, state.to_gradio_chatbot()) + (disable_btn,) * 5
                 else:
-                    output = data["text"] + f" (error_code: {data['error_code']})"
-                    state.messages[-1][-1] = output
+                    model_output_text = data["text"] + f" (error_code: {data['error_code']})"
+                    state.messages[-1][-1] = model_output_text
                     yield (state, state.to_gradio_chatbot()) + (disable_btn, disable_btn, disable_btn, enable_btn, enable_btn)
                     return
                 time.sleep(0.03)
@@ -288,7 +308,7 @@ def http_bot(state, model_selector, temperature, top_p, max_new_tokens, request:
     yield (state, state.to_gradio_chatbot()) + (enable_btn,) * 5
 
     finish_tstamp = time.time()
-    logger.info(f"{output}")
+    logger.info(f"{model_output_text}")
 
     with open(get_conv_log_filename(), "a") as fout:
         data = {

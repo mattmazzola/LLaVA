@@ -1,3 +1,4 @@
+from enum import Enum
 import json
 import logging
 import logging.handlers
@@ -17,6 +18,20 @@ from llava.constants import LOGDIR
 server_error_msg = "**NETWORK ERROR DUE TO HIGH TRAFFIC. PLEASE REGENERATE OR REFRESH THIS PAGE.**"
 moderation_input_msg = "YOUR INPUT VIOLATES OUR CONTENT MODERATION GUIDELINES. PLEASE TRY AGAIN."
 moderation_output_msg = "Sorry, the model output content which violates our content moderation policies."
+
+
+class ModerationOptions(Enum):
+    ALL: str = "all"
+
+    INPUT_TEXT_GUARDLIST: str = "input_text_guardlist"
+    INPUT_TEXT_AICS: str = "input_text_aics"
+    INPUT_TEXT_OPENAI: str = "input_text_openai"
+    INPUT_IMAGE_AICS: str = "input_image_aics"
+
+    OUTPUT_TEXT_GUARDLIST: str = "output_text_guardlist"
+    OUTPUT_TEXT_AICS: str = "output_text_aics"
+    OUTPUT_TEXT_OPENAI: str = "output_text_openai"
+
 
 handler = None
 
@@ -107,10 +122,6 @@ def disable_torch_init():
     import torch
     setattr(torch.nn.Linear, "reset_parameters", lambda self: None)
     setattr(torch.nn.LayerNorm, "reset_parameters", lambda self: None)
-
-
-def violates_text_moderation(text):
-    return violates_guardlist_moderation(text) or does_text_violate_azure_content_safety(text)  # or violates_openai_moderation(text)
 
 
 GuardlistWrapper.appKey = os.environ["GUARDLIST_KEY"]
