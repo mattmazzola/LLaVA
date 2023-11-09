@@ -15,8 +15,8 @@ import requests
 from llava.conversation import (default_conversation, conv_templates,
                                    SeparatorStyle)
 from llava.constants import LOGDIR
-from llava.utils import (build_logger, server_error_msg,
-    violates_moderation, moderation_msg)
+from llava.utils import (build_logger, does_image_violate_azure_content_safety, server_error_msg,
+    violates_text_moderation, moderation_msg)
 import hashlib
 
 logger = build_logger("gradio_web_server", "gradio_web_server.log")
@@ -141,11 +141,12 @@ def add_text(state, text, image, image_process_mode, request: gr.Request):
         state.skip_next = True
         return (state, state.to_gradio_chatbot(), "", None) + (no_change_btn,) * 5
     if args.moderate:
-        flagged = violates_moderation(text)
-        if flagged:
+        does_text_violate_policy = violates_text_moderation(text)
+        if image is not None:
+            does_image_violate_policy = does_image_violate_azure_content_safety(image)
+        if does_text_violate_policy or does_image_violate_policy:
             state.skip_next = True
-            return (state, state.to_gradio_chatbot(), moderation_msg, None) + (
-                no_change_btn,) * 5
+            return (state, state.to_gradio_chatbot(), moderation_msg, None) + (no_change_btn,) * 5
 
     text = text[:1536]  # Hard cut-off
     if image is not None:

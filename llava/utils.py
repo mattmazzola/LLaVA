@@ -1,4 +1,3 @@
-import datetime
 import json
 import logging
 import logging.handlers
@@ -8,8 +7,7 @@ import sys
 from azure.ai.contentsafety import ContentSafetyClient
 from azure.core.credentials import AzureKeyCredential
 from azure.core.exceptions import HttpResponseError
-from azure.ai.contentsafety.models import AnalyzeTextOptions, AnalyzeTextResult, AnalyzeImageOptions, AnalyzeImageResult, ImageData
-from matplotlib import category
+from azure.ai.contentsafety.models import AnalyzeTextOptions, AnalyzeImageOptions, ImageData
 
 import requests
 from .guardlistWrapper import GuardlistWrapper
@@ -107,8 +105,8 @@ def disable_torch_init():
     setattr(torch.nn.LayerNorm, "reset_parameters", lambda self: None)
 
 
-def violates_moderation(text):
-    return violates_guardlist_moderation(text) or violates_azure_content_safety(text)  # or violates_openai_moderation(text)
+def violates_text_moderation(text):
+    return violates_guardlist_moderation(text) or does_text_violate_azure_content_safety(text)  # or violates_openai_moderation(text)
 
 
 GuardlistWrapper.appKey = os.environ["GUARDLIST_KEY"]
@@ -147,12 +145,12 @@ def violates_openai_moderation(text):
 client: ContentSafetyClient = None
 
 
-def violates_azure_content_safety(text,
-                                  hate_severity_max=3,
-                                  self_harm_severity_max=3,
-                                  sexual_severity_max=3,
-                                  violence_severity_max=3):
-    does_text_violoate_policy = False
+def does_text_violate_azure_content_safety(text,
+                                           hate_severity_max=3,
+                                           self_harm_severity_max=3,
+                                           sexual_severity_max=3,
+                                           violence_severity_max=3):
+    does_violate = False
 
     global client
     if client is None:
@@ -174,8 +172,8 @@ def violates_azure_content_safety(text,
         for category_result, max_severity in category_results_vs_max_severity_pairs:
             if category_result is not None:
                 if category_result.severity > max_severity:
-                    does_text_violoate_policy = True
-                    print(f"'{text}' violated the {category_result.category} policy. Actual Severity: {category_result.severity} > Max Severity: {max_severity}")
+                    does_violate = True
+                    print(f"⚠️ '{text}' violated the {category_result.category} policy. Actual Severity: {category_result.severity} > Max Severity: {max_severity}")
                     break
 
     except HttpResponseError as e:
@@ -184,7 +182,59 @@ def violates_azure_content_safety(text,
             print(f"Error code: {e.error.code}")
             print(f"Error message: {e.error.message}")
 
-    return does_text_violoate_policy
+    return does_violate
+
+
+def _convert_image_base64_str(image):
+    import base64
+    from io import BytesIO
+
+    buffered = BytesIO()
+    image.save(buffered, format="JPEG")
+    img_b64_str = base64.b64encode(buffered.getvalue()).decode('utf-8')
+
+    return img_b64_str
+
+
+def does_image_violate_azure_content_safety(image,
+                                            hate_severity_max=3,
+                                            self_harm_severity_max=3,
+                                            sexual_severity_max=3,
+                                            violence_severity_max=3):
+    does_violate = False
+
+    global client
+    if client is None:
+        endpoint = os.environ["CONTENT_SAFETY_ENDPOINT"]
+        key = os.environ["CONTENT_SAFETY_KEY"]
+        client = ContentSafetyClient(endpoint, AzureKeyCredential(key))
+
+    try:
+        image_base64_str = _convert_image_base64_str(image)
+        request = AnalyzeImageOptions(image=ImageData(content=image_base64_str))
+        response = client.analyze_image(request)
+
+        category_results_vs_max_severity_pairs = [
+            (response.hate_result, hate_severity_max),
+            (response.self_harm_result, self_harm_severity_max),
+            (response.sexual_result, sexual_severity_max),
+            (response.violence_result, violence_severity_max),
+        ]
+
+        for category_result, max_severity in category_results_vs_max_severity_pairs:
+            if category_result is not None:
+                if category_result.severity > max_severity:
+                    does_violate = True
+                    print(f"⚠️ The image provided violated the {category_result.category} policy. Actual Severity: {category_result.severity} > Max Severity: {max_severity}")
+                    break
+
+    except HttpResponseError as e:
+        print("Analyze image failed.")
+        if e.error:
+            print(f"Error code: {e.error.code}")
+            print(f"Error message: {e.error.message}")
+
+    return does_violate
 
 
 def pretty_print_semaphore(semaphore):
