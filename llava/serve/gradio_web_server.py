@@ -146,15 +146,15 @@ def add_text(state, text, image, image_process_mode, request: gr.Request):
         does_text_violate_policy = False
         does_image_violate_policy = False
 
-        if ModerationOptions.ALL.value in args.moderate or ModerationOptions.INPUT_TEXT_GUARDLIST.value in args.moderate:
-            does_text_violate_policy = violates_guardlist_moderation(text)
-        if ModerationOptions.ALL.value in args.moderate or ModerationOptions.INPUT_TEXT_AICS.value in args.moderate:
-            does_text_violate_policy = does_text_violate_azure_content_safety(text)
-        if ModerationOptions.ALL.value in args.moderate or ModerationOptions.INPUT_TEXT_OPENAI.value in args.moderate:
-            does_text_violate_policy = violates_openai_moderation(text)
+        if not does_text_violate_policy and (ModerationOptions.ALL.value in args.moderate or ModerationOptions.INPUT_TEXT_GUARDLIST.value in args.moderate):
+            does_text_violate_policy |= violates_guardlist_moderation(text)
+        if not does_text_violate_policy and (ModerationOptions.ALL.value in args.moderate or ModerationOptions.INPUT_TEXT_AICS.value in args.moderate):
+            does_text_violate_policy |= does_text_violate_azure_content_safety(text)
+        if not does_text_violate_policy and (ModerationOptions.ALL.value in args.moderate or ModerationOptions.INPUT_TEXT_OPENAI.value in args.moderate):
+            does_text_violate_policy |= violates_openai_moderation(text)
         if image is not None:
-            if ModerationOptions.ALL.value in args.moderate or ModerationOptions.INPUT_IMAGE_AICS.value in args.moderate:
-                does_image_violate_policy = does_image_violate_azure_content_safety(image)
+            if not does_image_violate_policy and (ModerationOptions.ALL.value in args.moderate or ModerationOptions.INPUT_IMAGE_AICS.value in args.moderate):
+                does_image_violate_policy |= does_image_violate_azure_content_safety(image)
 
         if does_text_violate_policy or does_image_violate_policy:
             state.skip_next = True
@@ -278,12 +278,12 @@ def http_bot(state, model_selector, temperature, top_p, max_new_tokens, request:
                     if len(args.moderate) > 0:
                         does_text_violate_policy = False
 
-                        if ModerationOptions.ALL.value in args.moderate or ModerationOptions.OUTPUT_TEXT_GUARDLIST.value in args.moderate:
-                            does_text_violate_policy = violates_guardlist_moderation(model_output_text)
-                        if ModerationOptions.ALL.value in args.moderate or ModerationOptions.OUTPUT_TEXT_AICS.value in args.moderate:
-                            does_text_violate_policy = does_text_violate_azure_content_safety(model_output_text)
-                        if ModerationOptions.ALL.value in args.moderate or ModerationOptions.OUTPUT_TEXT_OPENAI.value in args.moderate:
-                            does_text_violate_policy = violates_openai_moderation(model_output_text)
+                        if not does_text_violate_policy and (ModerationOptions.ALL.value in args.moderate or ModerationOptions.OUTPUT_TEXT_GUARDLIST.value in args.moderate):
+                            does_text_violate_policy |= violates_guardlist_moderation(model_output_text)
+                        if not does_text_violate_policy and (ModerationOptions.ALL.value in args.moderate or ModerationOptions.OUTPUT_TEXT_AICS.value in args.moderate):
+                            does_text_violate_policy |= does_text_violate_azure_content_safety(model_output_text)
+                        if not does_text_violate_policy and (ModerationOptions.ALL.value in args.moderate or ModerationOptions.OUTPUT_TEXT_OPENAI.value in args.moderate):
+                            does_text_violate_policy |= violates_openai_moderation(model_output_text)
 
                         if does_text_violate_policy:
                             # Overwrite entire last message with moderation message and return to stop generation
