@@ -34,6 +34,7 @@ class ModerationOptions(Enum):
 
     GLIGEN_INPUT_TEXT_GUARDLIST: str = "gligen_input_text_guardlist"
     GLIGEN_INPUT_TEXT_AICS: str = "gligen_input_text_aics"
+    GLIGEN_OUTPUT_IMAGE_AICS: str = "gligen_output_image_aics"
 
 
 handler = None
