@@ -32,6 +32,9 @@ class ModerationOptions(Enum):
     OUTPUT_TEXT_AICS: str = "output_text_aics"
     OUTPUT_TEXT_OPENAI: str = "output_text_openai"
 
+    GLIGEN_INPUT_TEXT_GUARDLIST: str = "gligen_input_text_guardlist"
+    GLIGEN_INPUT_TEXT_AICS: str = "gligen_input_text_aics"
+
 
 handler = None
 
