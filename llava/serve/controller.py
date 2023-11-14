@@ -236,7 +236,7 @@ class Controller:
         }
 
 
-app = FastAPI()
+app = FastAPI(docs_url="/", title="LLaVA - Controller")
 
 
 @app.post("/register_worker")

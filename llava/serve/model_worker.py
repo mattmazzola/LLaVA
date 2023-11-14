@@ -217,7 +217,7 @@ class ModelWorker:
             yield json.dumps(ret).encode() + b"\0"
 
 
-app = FastAPI()
+app = FastAPI(docs_url="/", title="LLaVA - Model Worker")
 
 
 def release_model_semaphore(fn=None):
