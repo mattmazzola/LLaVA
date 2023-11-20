@@ -55,6 +55,7 @@ def build_logger(logger_name, logger_filename, logger_blocklist: List[str] = [])
     # Set the format of root handlers
     if not logging.getLogger().handlers:
         logging.basicConfig(level=os.environ.get("LOGLEVEL", logging.INFO))
+
     logging.getLogger().handlers[0].setFormatter(formatter)
 
     # Redirect stdout and stderr to loggers
@@ -91,6 +92,7 @@ class StreamToLogger(object):
     """
     Fake file-like stream object that redirects writes to a logger instance.
     """
+
     def __init__(self, logger, log_level=logging.INFO):
         self.terminal = sys.stdout
         self.logger = logger
@@ -128,6 +130,7 @@ def disable_torch_init():
     Disable the redundant torch default initialization to accelerate model creation.
     """
     import torch
+
     setattr(torch.nn.Linear, "reset_parameters", lambda self: None)
     setattr(torch.nn.LayerNorm, "reset_parameters", lambda self: None)
 
@@ -197,7 +200,7 @@ def does_text_violate_azure_content_safety(text,
             if category_result is not None:
                 if category_result.severity > max_severity:
                     does_violate = True
-                    logger.warning(f"⚠️ '{text}' violated the {category_result.category} policy. Actual Severity: {category_result.severity} > Max Severity: {max_severity}")
+                    logger.warning(f"⚠️ The input text: '{text}' violated the {category_result.category} policy. Severity: Actual: {category_result.severity} > Max: {max_severity}")
                     break
 
     except HttpResponseError as e:
@@ -250,7 +253,7 @@ def does_image_violate_azure_content_safety(image,
             if category_result is not None:
                 if category_result.severity > max_severity:
                     does_violate = True
-                    logger.warning(f"⚠️ The image provided violated the {category_result.category} policy. Actual Severity: {category_result.severity} > Max Severity: {max_severity}")
+                    logger.warning(f"⚠️ The image provided violated the {category_result.category} policy. Severity: Actual: {category_result.severity} > Max: {max_severity}")
                     break
 
     except HttpResponseError as e:
