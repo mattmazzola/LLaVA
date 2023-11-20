@@ -275,7 +275,7 @@ def http_bot(state, model_selector, temperature, top_p, max_new_tokens, request:
                 if data["error_code"] == 0:
                     model_output_text = data["text"][len(prompt):].strip()
 
-                    if len(args.moderate) > 0:
+                    if len(model_output_text) > 0 and len(args.moderate) > 0:
                         does_text_violate_policy = False
 
                         if not does_text_violate_policy and (ModerationOptions.ALL.value in args.moderate or ModerationOptions.OUTPUT_TEXT_GUARDLIST.value in args.moderate):
