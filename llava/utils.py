@@ -4,6 +4,7 @@ import logging
 import logging.handlers
 import os
 import sys
+from typing import List
 
 from azure.ai.contentsafety import ContentSafetyClient
 from azure.core.credentials import AzureKeyCredential
@@ -40,7 +41,10 @@ class ModerationOptions(Enum):
 handler = None
 
 
-def build_logger(logger_name, logger_filename):
+def build_logger(logger_name, logger_filename, logger_blocklist: List[str] = []):
+    for module in logger_blocklist:
+        logging.getLogger(module).setLevel(logging.WARNING)
+
     global handler
 
     formatter = logging.Formatter(
