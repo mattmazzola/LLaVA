@@ -122,7 +122,7 @@ class StreamToLogger(object):
         self.linebuf = ''
 
 
-logger = build_logger("llava-utils", "llava-utils.log")
+logger = build_logger("llava-utils", "llava-utils.log", ["azure", "azure.core", "httpx", "httpcore", "urllib3"])
 
 
 def disable_torch_init():
