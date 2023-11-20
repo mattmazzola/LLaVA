@@ -19,7 +19,7 @@ from llava.utils import (build_logger, does_image_violate_azure_content_safety, 
     moderation_input_msg, moderation_output_msg, ModerationOptions)
 import hashlib
 
-logger = build_logger("gradio_web_server", "gradio_web_server.log")
+logger = build_logger("gradio_web_server", "gradio_web_server.log", ["markdown_it", "asyncio", ])
 
 headers = {"User-Agent": "LLaVA Client"}
 
