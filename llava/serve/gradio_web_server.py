@@ -15,7 +15,7 @@ import requests
 from llava.conversation import (default_conversation, conv_templates,
                                    SeparatorStyle)
 from llava.constants import LOGDIR
-from llava.utils import (build_logger, does_image_violate_azure_content_safety, does_text_violate_azure_content_safety, server_error_msg, violates_guardlist_moderation, violates_openai_moderation,
+from llava.utils import (build_logger, does_image_violate_azure_content_safety, does_text_violate_azure_content_safety, does_text_violate_azure_content_safety_jailbreak, server_error_msg, violates_guardlist_moderation, violates_openai_moderation,
     moderation_input_msg, moderation_output_msg, ModerationOptions)
 import hashlib
 
@@ -148,6 +148,8 @@ def add_text(state, text, image, image_process_mode, request: gr.Request):
 
         if not does_text_violate_policy and (ModerationOptions.ALL.value in args.moderate or ModerationOptions.INPUT_TEXT_GUARDLIST.value in args.moderate):
             does_text_violate_policy |= violates_guardlist_moderation(text)
+        if not does_text_violate_policy and (ModerationOptions.ALL.value in args.moderate or ModerationOptions.INPUT_TEXT_AICS_JAILBREAK.value in args.moderate):
+            does_text_violate_policy |= does_text_violate_azure_content_safety_jailbreak(text)
         if not does_text_violate_policy and (ModerationOptions.ALL.value in args.moderate or ModerationOptions.INPUT_TEXT_AICS.value in args.moderate):
             does_text_violate_policy |= does_text_violate_azure_content_safety(text)
         if not does_text_violate_policy and (ModerationOptions.ALL.value in args.moderate or ModerationOptions.INPUT_TEXT_OPENAI.value in args.moderate):

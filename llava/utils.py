@@ -10,6 +10,7 @@ from azure.ai.contentsafety import ContentSafetyClient
 from azure.core.credentials import AzureKeyCredential
 from azure.core.exceptions import HttpResponseError
 from azure.ai.contentsafety.models import AnalyzeTextOptions, AnalyzeImageOptions, ImageData
+import httpx
 
 import requests
 from .guardlistWrapper import GuardlistWrapper
@@ -26,6 +27,7 @@ class ModerationOptions(Enum):
 
     INPUT_TEXT_GUARDLIST: str = "input_text_guardlist"
     INPUT_TEXT_AICS: str = "input_text_aics"
+    INPUT_TEXT_AICS_JAILBREAK: str = "input_text_aics_jailbreak"
     INPUT_TEXT_OPENAI: str = "input_text_openai"
     INPUT_IMAGE_AICS: str = "input_image_aics"
 
@@ -210,6 +212,51 @@ def does_text_violate_azure_content_safety(text,
             logger.error(f"Error message: {e.error.message}")
 
     return does_violate
+
+
+def _analyze_text_for_jailbreak(
+    input_text: str,
+    endpoint: str = os.environ["CONTENT_SAFETY_ENDPOINT"],
+    key: str = os.environ["CONTENT_SAFETY_KEY"],
+):
+    """Test the Azure Content Safety Jailbreak API.
+
+    :param input_text: Input text to analyze
+    :param endpoint: Content Safety Resource Endpoint, defaults to os.environ["CONTENT_SAFETY_ENDPOINT"]
+    :param key: Content Safety Resource Key, defaults to os.environ["CONTENT_SAFETY_KEY"]
+
+    :return: dict
+    """
+    response = httpx.post(
+        f"{endpoint}contentsafety/text:detectJailbreak?api-version=2023-10-15-preview",
+        headers={
+            "Ocp-Apim-Subscription-Key": key,
+            "Content-Type": "application/json",
+        },
+        json={"text": input_text},
+    )
+
+    response.raise_for_status()
+    response_json = response.json()
+
+    return response_json
+
+
+def does_text_violate_azure_content_safety_jailbreak(text: str):
+    is_jailbreak = False
+
+    try:
+        response = _analyze_text_for_jailbreak(text)
+        is_jailbreak = response["jailbreakAnalysis"]["detected"]
+
+        logger.debug(f"Text '{text}' is jailbreak attempt: {is_jailbreak}")
+    except HttpResponseError as e:
+        logger.error("Request to Analyze text for Jailbreak failed.")
+        if e.error:
+            logger.error(f"Error code: {e.error.code}")
+            logger.error(f"Error message: {e.error.message}")
+
+    return is_jailbreak
 
 
 def _convert_image_base64_str(image):
