@@ -40,4 +40,5 @@ exclude = ["assets*", "benchmark*", "docs", "dist*", "playground*", "scripts*", 
 exclude = ["assets*", "benchmark*", "docs", "dist*", "playground*", "scripts*", "tests*"]
 
 [tool.black]
+skip-string-normalization = true
 line-length = 120
