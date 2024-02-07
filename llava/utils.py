@@ -13,7 +13,6 @@ from azure.ai.contentsafety.models import AnalyzeTextOptions, AnalyzeImageOption
 import httpx
 
 import requests
-from .guardlistWrapper import GuardlistWrapper
 
 from llava.constants import LOGDIR
 
@@ -137,12 +136,14 @@ def disable_torch_init():
     setattr(torch.nn.LayerNorm, "reset_parameters", lambda self: None)
 
 
-GuardlistWrapper.appKey = os.environ["GUARDLIST_KEY"]
-GuardlistWrapper.partnerName = "LLaVA-Interactive-Demo"
-
-
 def violates_guardlist_moderation(text):
+    from .guardlistWrapper import GuardlistWrapper
+
+    GuardlistWrapper.appKey = os.environ["GUARDLIST_KEY"]
+    GuardlistWrapper.partnerName = "LLaVA-Interactive-Demo"
+
     is_phrase_problematic = GuardlistWrapper.is_phrase_problematic(text, "en")
+    logger.debug(f"GuardList: Text '{text}' is problematic: {is_phrase_problematic}")
 
     return is_phrase_problematic
 
